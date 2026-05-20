@@ -155,13 +155,16 @@ function normalizeRecommendation(raw: unknown, idx: number): Recommendation | nu
   return { id, name, category, score, description, tags, investment, roi, risk, lat, lng };
 }
 
-export async function fetchRecommendations(location: string): Promise<ScanResult> {
+export async function fetchRecommendations(location: string, userEmail?: string): Promise<ScanResult> {
   try {
     const res = await fetch(endpoints.recommendations, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       // Backend expects `area` (not `location`)
-      body: JSON.stringify({ area: location }),
+      body: JSON.stringify({ 
+        area: location,
+        user_email: userEmail || "anonymous"
+      }),
     });
     if (!res.ok) throw new Error(`API ${res.status}`);
     const data = await res.json();

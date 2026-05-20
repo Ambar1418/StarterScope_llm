@@ -1,4 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { API_BASE_URL } from "@/config/api";
 import { motion } from "framer-motion";
 import { Search, MapPin, Download, ChevronRight } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
@@ -14,16 +16,12 @@ import { useSearch } from "@/context/SearchContext";
 import { toast } from "sonner";
 import { useGooglePlacesAutocomplete } from "@/hooks/useGooglePlacesAutocomplete";
 
-const recentScans = [
-  { name: "Bhopal, MP", time: "Just now" },
-  { name: "Indore, MP", time: "2 hours ago" },
-  { name: "Pune, MH", time: "Yesterday" },
-];
-
 export default function DashboardPage() {
+  const { user } = useAuth();
   const { scan, setScan } = useSearch();
   const [location, setLocation] = useState("");
   const [loading, setLoading] = useState(false);
+  const [recentScans, setRecentScans] = useState<any[]>([]);
   const [sidebarInput, setSidebarInput] = useState<HTMLInputElement | null>(null);
   const [mobileInput, setMobileInput] = useState<HTMLInputElement | null>(null);
 
@@ -34,6 +32,24 @@ export default function DashboardPage() {
   useGooglePlacesAutocomplete({ input: sidebarInput, onPlaceSelected });
   useGooglePlacesAutocomplete({ input: mobileInput, onPlaceSelected });
 
+  const fetchHistory = async (email: string) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/history/${encodeURIComponent(email)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setRecentScans(data.history || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch search history:", err);
+    }
+  };
+
+  useEffect(() => {
+    if (user?.email) {
+      fetchHistory(user.email);
+    }
+  }, [user]);
+
   const runScan = async () => {
     if (!location.trim()) {
       toast.error("Please enter a location");
@@ -42,13 +58,54 @@ export default function DashboardPage() {
     setLoading(true);
     setScan(null);
     try {
-      const result = await fetchRecommendations(location.trim());
+      const result = await fetchRecommendations(location.trim(), user?.email || undefined);
       setScan(result);
       toast.success(`Found ${result.recommendations.length} opportunities`);
+      if (user?.email) {
+        fetchHistory(user.email);
+      }
     } catch {
       toast.error("Scan failed — please retry");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRecentScanClick = (scanItem: any) => {
+    setLocation(scanItem.area);
+    
+    // Normalize recommendations from the history record
+    const rawRecs = Array.isArray(scanItem.recommendations)
+      ? scanItem.recommendations
+      : typeof scanItem.recommendations === "string"
+      ? JSON.parse(scanItem.recommendations)
+      : [];
+
+    setScan({
+      location: scanItem.area,
+      scannedAt: scanItem.created_at,
+      recommendations: rawRecs
+    });
+  };
+
+  const formatScanTime = (dateStr: string) => {
+    try {
+      const normalizedStr = dateStr.replace(" ", "T");
+      const date = new Date(normalizedStr);
+      if (isNaN(date.getTime())) return dateStr;
+      
+      const now = new Date();
+      const diffMs = now.getTime() - date.getTime();
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMins / 60);
+      
+      if (diffMins < 1) return "Just now";
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffHours < 24) return `${diffHours}h ago`;
+      
+      return date.toLocaleDateString("en-IN", { month: "short", day: "numeric" });
+    } catch {
+      return dateStr;
     }
   };
 
@@ -98,27 +155,31 @@ export default function DashboardPage() {
             <p className="font-mono text-[11px] text-text-muted uppercase tracking-widest mb-3">
               Recent Scans
             </p>
-            <ul className="space-y-1">
-              {recentScans.map((s, i) => (
-                <li key={s.name}>
-                  <button
-                    onClick={() => setLocation(s.name)}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg flex items-center justify-between hover:bg-elevated transition-colors border-l-2 ${
-                      i === 0 ? "border-accent-emerald" : "border-transparent"
-                    }`}
-                  >
-                    <div>
-                      <div className="font-body text-sm text-text-primary">
-                        {s.name}
+            {recentScans.length === 0 ? (
+              <p className="text-xs text-text-muted italic px-3 py-2">No recent scans yet</p>
+            ) : (
+              <ul className="space-y-1">
+                {recentScans.map((s, i) => (
+                  <li key={s.id || s.area + i}>
+                    <button
+                      onClick={() => handleRecentScanClick(s)}
+                      className={`w-full text-left px-3 py-2.5 rounded-lg flex items-center justify-between hover:bg-elevated transition-colors border-l-2 ${
+                        scan?.location === s.area ? "border-accent-emerald bg-elevated" : "border-transparent"
+                      }`}
+                    >
+                      <div>
+                        <div className="font-body text-sm text-text-primary">
+                          {s.area}
+                        </div>
+                        <div className="font-mono text-[11px] text-text-muted">
+                          {formatScanTime(s.created_at)}
+                        </div>
                       </div>
-                      <div className="font-mono text-[11px] text-text-muted">
-                        {s.time}
-                      </div>
-                    </div>
-                  </button>
-                </li>
-              ))}
-            </ul>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </aside>
 
