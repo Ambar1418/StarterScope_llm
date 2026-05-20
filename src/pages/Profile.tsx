@@ -97,12 +97,12 @@ export default function Profile() {
       
       toast.success("Profile saved successfully");
       
-      // Update local storage so that other pages (like Navbar) show the new name
-      const localUserRaw = localStorage.getItem("ss.auth.user");
+      // Update session storage so that other pages (like Navbar) show the new name
+      const localUserRaw = sessionStorage.getItem("ss.auth.user");
       if (localUserRaw) {
         const localUser = JSON.parse(localUserRaw);
         localUser.name = profileName;
-        localStorage.setItem("ss.auth.user", JSON.stringify(localUser));
+        sessionStorage.setItem("ss.auth.user", JSON.stringify(localUser));
       }
     } catch (err: any) {
       toast.error(err.message || "Failed to save profile");

@@ -41,16 +41,14 @@ async function postJson<T>(url: string, body: unknown): Promise<T> {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-
-  useEffect(() => {
+  const [user, setUser] = useState<AuthUser | null>(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setUser(JSON.parse(raw) as AuthUser);
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      return raw ? (JSON.parse(raw) as AuthUser) : null;
     } catch {
-      // ignore
+      return null;
     }
-  }, []);
+  });
 
   const value = useMemo<AuthContextValue>(() => {
     return {
@@ -59,13 +57,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async signIn({ email, password }) {
         const u = await postJson<AuthUser>(`${API_BASE_URL}/api/auth/signin`, { email, password });
         setUser(u);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(u));
         return u;
       },
       async signUp({ name, email, password }) {
         const u = await postJson<AuthUser>(`${API_BASE_URL}/api/auth/signup`, { name, email, password });
         setUser(u);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(u));
         return u;
       },
       async googleSignIn(token) {
@@ -80,12 +78,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           image_url: payload.picture || payload.image_url
         });
         setUser(u);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(u));
         return u;
       },
       signOut() {
         setUser(null);
-        localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem(STORAGE_KEY);
       },
     };
   }, [user]);
