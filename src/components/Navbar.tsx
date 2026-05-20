@@ -128,11 +128,9 @@ export function Navbar() {
                   {user?.name ? user.name.split(" ")[0] : "Profile"}
                 </SsButton>
               </Link>
-              <button onClick={signOut} className="hidden sm:inline-flex">
-                <SsButton variant="primary" size="sm">
-                  Logout
-                </SsButton>
-              </button>
+              <SsButton onClick={signOut} variant="primary" size="sm" className="hidden sm:inline-flex">
+                Logout
+              </SsButton>
             </>
           )}
           <button
@@ -205,11 +203,9 @@ export function Navbar() {
                         Profile
                       </SsButton>
                     </Link>
-                    <button onClick={signOut} className="block w-full">
-                      <SsButton variant="primary" className="w-full">
-                        Logout
-                      </SsButton>
-                    </button>
+                    <SsButton onClick={signOut} variant="primary" className="w-full">
+                      Logout
+                    </SsButton>
                   </>
                 )}
               </div>
