@@ -1772,15 +1772,7 @@ async def get_recommendations(request: RecommendationRequest, db: Session = Depe
             logger.warning("Intelligence engine unavailable. Returning high-fidelity fallback to ensure 0% downtime.")
             # Trigger the fallback directly in main.py to prevent any empty UI states
             fallback = await intelligence._generate_realistic_fallback(base_area, request.language, request.business_type)
-            return {
-                "id": 0,
-                "area": analysis_area,
-                "status": "success",
-                "analysis": fallback.get("analysis", {}),
-                "recommendations": fallback.get("recommendations", []),
-                "cached": False,
-                "system_status": "Neural Synthesis Optimized"
-            }
+            result = fallback
         
         # Standardize keys to prevent KeyError in DB save
         recs = result.get("recommendations", [])
@@ -1823,6 +1815,28 @@ async def get_recommendations(request: RecommendationRequest, db: Session = Depe
             intelligence = get_intelligence()
             # If everything else fails, we MUST provide working results to the user
             fallback_result = await intelligence._generate_realistic_fallback(analysis_area or request.area, request.language)
+            
+            # Save fallback to database if possible
+            try:
+                recs = fallback_result.get("recommendations", [])
+                ana = fallback_result.get("analysis", "Analysis Pending")
+                analysis_to_save = ana if isinstance(ana, str) else json.dumps(ana)
+                
+                db_record = models.SearchHistory(
+                    user_email=request.user_email,
+                    area=analysis_area or request.area,
+                    analysis=analysis_to_save,
+                    recommendations=recs
+                )
+                db.add(db_record)
+                db.commit()
+                db.refresh(db_record)
+                fallback_result["id"] = db_record.id
+                print(f"💾 Saved error fallback to database with ID: {db_record.id}")
+            except Exception as dberr:
+                print(f"⚠️ Failed to save error fallback to DB: {dberr}")
+                fallback_result["id"] = 0
+                
             return {
                 **fallback_result,
                 "cached": False,
@@ -2210,7 +2224,7 @@ async def get_roadmap(request: RoadmapRequest, db: Session = Depends(get_db)):
                 "milestones": ["Beta Launch", "Initial Marketing", "Customer Feedback"]
             }
         ]
-        return {
+        roadmap_data = {
             "business": {
                 "title": request.title,
                 "six_month_plan": baseline_steps,
@@ -2220,9 +2234,27 @@ async def get_roadmap(request: RoadmapRequest, db: Session = Depends(get_db)):
             "steps": baseline_steps,
             "timeline": "6 Months Plan",
             "area": request.area,
-            "current_step": 0,
-            "self_healing": True
+            "requirements": "Initial capital, core operational team, and local logistics.",
+            "execution_tips": ["Prioritize local trust", "Focus on speed", "Maintain quality"],
+            "current_phase": 0
         }
+        
+        try:
+            db_roadmap = models.Roadmap(
+                user_email=request.user_email.lower().strip(),
+                title=request.title,
+                area=request.area,
+                roadmap_data=roadmap_data,
+                current_step=0
+            )
+            db.add(db_roadmap)
+            db.commit()
+            db.refresh(db_roadmap)
+            print(f"✅ Saved fallback roadmap to database for {request.user_email}")
+        except Exception as dberr:
+            print(f"⚠️ Failed to save fallback roadmap to DB: {dberr}")
+            
+        return {**roadmap_data, "current_step": 0, "self_healing": True}
 
 @app.put("/api/roadmap/step")
 def update_roadmap_step(request: RoadmapStepUpdate, db: Session = Depends(get_db)):
