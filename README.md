@@ -2,6 +2,13 @@
 
 A high-fidelity business intelligence engine that provides AI-powered market analysis, hyper-local business recommendations, and neural strategic planning tools. It uses a 5-layer architecture designed for real-time market reconnaissance, swarm retrieval-augmented generation (RAG), and self-healing intelligence synthesis.
 
+## ✨ Core Features
+
+*   **Hyper-Local Area Scan**: Enter any city or area to query local market indicators, competitor density, and customer pain points.
+*   **Specific Business Concept Search**: Optionally supply a specific business idea (e.g. *Cloud Kitchen*, *Boutique Co-Working Space*, *Organic Grocery*) alongside the location. The neural engine performs a dedicated feasibility study, Go/No-Go metrics, and custom-tailored recommendations for that specific niche.
+*   **Real-Time Telemetry Stream**: Watch live analytics gathering over WebSocket connections as the RAG swarm fetches Google Maps, Reddit consumer sentiments, and economic data.
+*   **Interactive Implementation Roadmap**: Track milestones, retrieve detailed sub-step guides, and manage execution tasks to launch.
+
 ---
 
 ## 🧠 System Architecture & Workflow
