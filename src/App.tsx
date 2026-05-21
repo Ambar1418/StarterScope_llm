@@ -17,7 +17,7 @@ import { ScrollToHash } from "@/components/ScrollToHash";
 
 const App = () => (
   <ClientProviders>
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ScrollToHash />
       <Routes>
         <Route path="/" element={<Index />} />

@@ -29,7 +29,7 @@ function loadGoogleMapsScript(apiKey: string): Promise<void> {
       script.dataset.googleMaps = "true";
       script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
         apiKey
-      )}&libraries=places`;
+      )}&libraries=places&loading=async`;
       script.onload = () => resolve();
       script.onerror = () => reject(new Error("Failed to load Google Maps script"));
       document.head.appendChild(script);
