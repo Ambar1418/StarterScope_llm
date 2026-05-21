@@ -16,6 +16,7 @@ export interface Recommendation {
 
 export interface ScanResult {
   location: string;
+  businessType?: string;
   scannedAt: string;
   recommendations: Recommendation[];
 }
@@ -155,15 +156,15 @@ function normalizeRecommendation(raw: unknown, idx: number): Recommendation | nu
   return { id, name, category, score, description, tags, investment, roi, risk, lat, lng };
 }
 
-export async function fetchRecommendations(location: string, userEmail?: string): Promise<ScanResult> {
+export async function fetchRecommendations(location: string, businessType?: string): Promise<ScanResult> {
   try {
     const res = await fetch(endpoints.recommendations, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      // Backend expects `area` (not `location`)
-      body: JSON.stringify({ 
+      // Backend expects `area` (not `location`) and optional `business_type`
+      body: JSON.stringify({
         area: location,
-        user_email: userEmail || "anonymous"
+        business_type: businessType || undefined,
       }),
     });
     if (!res.ok) throw new Error(`API ${res.status}`);
@@ -178,6 +179,7 @@ export async function fetchRecommendations(location: string, userEmail?: string)
     const recs = rawRecs.map((r, i) => normalizeRecommendation(r, i)).filter((x): x is Recommendation => !!x);
     return {
       location,
+      businessType,
       scannedAt: new Date().toISOString(),
       recommendations: recs.length ? recs : mockRecommendations,
     };
@@ -185,6 +187,7 @@ export async function fetchRecommendations(location: string, userEmail?: string)
     // Graceful fallback so the UI still demonstrates the flow.
     return {
       location,
+      businessType,
       scannedAt: new Date().toISOString(),
       recommendations: mockRecommendations,
     };
