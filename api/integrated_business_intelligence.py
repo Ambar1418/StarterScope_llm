@@ -48,7 +48,7 @@ class IntegratedBusinessIntelligence:
         # AI CORE KEYS (Elite Model Cluster)
         self.gemini_key = os.getenv("GEMINI_API_KEY")
         self.claude_key = os.getenv("CLAUDE_API_KEY")
-        self.pollinations_key = os.getenv("POLLINATION_API_KEY")
+        self.pollinations_key = os.getenv("POLLINATIONS_API_KEY") or os.getenv("POLLINATION_API_KEY")
         self.fred_key = os.getenv("FRED_API_KEY")
         self.aic_key = os.getenv("AIC_API_KEY")
         self.aic_base = os.getenv("AIC_BASE_URL", "https://api.ai.cc/v1")
@@ -164,6 +164,8 @@ class IntegratedBusinessIntelligence:
             elif 10 <= month_num <= 11: season = "Post-Monsoon (Festive season: Diwali, Dussehra)"
             else: season = "Winter (Wedding season, cool weather)"
 
+            recs_desc = f"A single-item list containing a detailed evaluation of '{target_business}' as the ONLY recommendation under category 'Target Niche'. Do NOT suggest any other unrelated businesses." if target_business else "12-15 high-fidelity business ideas that an entrepreneur could start today."
+
             cluster_prompt = f"""
             Analyze the market in {area} for business opportunities using the provided search intelligence.
             Current Month: {current_month} ({season})
@@ -172,7 +174,7 @@ class IntegratedBusinessIntelligence:
             {scouting_context[:5000] if scouting_context else "No specific search data available. Use your general knowledge of " + area + ", India."}
             
             Return a JSON object with three main keys:
-            1. 'recommendations': 12-15 high-fidelity business ideas that an entrepreneur could start today. {f"CRITICAL: The first recommendation MUST be a detailed evaluation of '{target_business}'." if target_business else ""}
+            1. 'recommendations': {recs_desc}
             2. 'seasonal_opportunities': {{
                 "current_season": "{season}",
                 "trending_ideas": [
@@ -228,18 +230,18 @@ class IntegratedBusinessIntelligence:
                         {{"trend": "Eco-friendly products", "adoption_rate": "High"}}
                     ]
                 }},
-                "go_no_go_analysis": {
+                "go_no_go_analysis": {{
                     "decision": "GO / NO-GO / PROCEED WITH CAUTION",
                     "reasoning": "Detailed reasoning based on market data",
                     "key_risks": ["Risk 1", "Risk 2"],
                     "success_probability": "X%",
                     "growth_index": "High / Medium / Exponential",
                     "stability_index": "Strong / Reliable / Emerging"
-                }
+                }}
                 {f', "special_task_evaluation": "The user is specifically interested in {target_business}. PROVIDE DIRECT FEEDBACK on this model for {area}. Is it a viable market fit? Focus your analysis on this specific idea and include it in your go_no_go_analysis reasoning."' if target_business else ''}
             }}
 
-            {f"SPECIAL REQUIREMENT: The user has requested a feasibility study for '{target_business}'. Your primary mission is to provide FEEDBACK on this specific idea. Is it the 'Best to Open' in {area}? Why or why not?" if target_business else ""}
+            {f"SPECIAL REQUIREMENT: The user has requested a feasibility study for '{target_business}'. Your primary mission is to evaluate this specific business concept. Focus the entire analysis block (emerging sectors, competitive landscape, consumer insights, spending patterns, market gaps, go_no_go_decision, etc.) on assessing the viability, competitive threat, market gaps, and localized demand for opening '{target_business}' in {area}." if target_business else ""}
             
             CRITICAL - REAL BUSINESS NAMES & RAG VERIFICATION: 
             - Use PROPER, CATCHY, AND ACTIONABLE business names that a real entrepreneur would use for a startup.
@@ -261,15 +263,15 @@ class IntegratedBusinessIntelligence:
             - Avoid robotic or technical jargon. Focus on 'ground reality'.
             
             Every recommendation MUST have these exact keys. DO NOT use '--', 'N/A', or empty strings:
-            - business_name: Professional and catchy entrepreneurial name
+            - business_name: Professional and catchy entrepreneurial name (must match '{target_business}' if target business is requested)
             - description: Strategic overview in humanized language
-            - category: Industry sector
+            - category: Industry sector (must be 'Target Niche' if target business is requested)
             - is_seasonal: boolean (true if best for current {season} season, false if evergreen)
             - market_gap: Specific localized gap found in {area}
             - target_audience: Primary local demographic
             - investment_range: Setup budget (e.g. ₹5L - ₹8L)
             - potential_revenue: Est. yearly earnings (e.g. ₹15L/Year)
-            - roi_potential: Profit potential % (e.g. 75%). MUST BE A NUMBER + %.
+            - roi_potential: Profit potential % (e.g. 25%). MUST BE A NUMBER + %.
             - implementation_difficulty: 'Low', 'Medium', or 'High'
             - cac: Cost to get a customer (e.g. ₹150)
             - ideal_neighborhood: Specific local area/colony
@@ -300,6 +302,57 @@ class IntegratedBusinessIntelligence:
             # --- STAGE 4: NEURAL REFINEMENT ---
             await push_ws_status("Polishing your final report...")
             polished_recs = self._polish_identities(final_insights.get("recommendations", []), area)
+            
+            if target_business:
+                target_recs = []
+                for r in polished_recs:
+                    is_target = False
+                    if r.get("category") == "Target Niche":
+                        is_target = True
+                    elif target_business.lower() in (r.get("business_name") or "").lower():
+                        is_target = True
+                    elif target_business.lower() in (r.get("category") or "").lower():
+                        is_target = True
+                    
+                    if is_target:
+                        r["category"] = "Target Niche"
+                        if target_business.lower() not in (r.get("business_name") or "").lower():
+                            r["business_name"] = target_business.title()
+                            r["title"] = r["business_name"]
+                        target_recs.append(r)
+                
+                if target_recs:
+                    polished_recs = target_recs[:1]
+                else:
+                    if polished_recs:
+                        polished_recs[0]["category"] = "Target Niche"
+                        polished_recs[0]["business_name"] = target_business.title()
+                        polished_recs[0]["title"] = polished_recs[0]["business_name"]
+                        polished_recs = polished_recs[:1]
+                    else:
+                        polished_recs = [{
+                            "business_name": target_business.title(),
+                            "title": target_business.title(),
+                            "description": f"Strategic implementation of a {target_business} business tailored for the {area} market. This initiative leverages localized demand signals and optimizes for rapid market entry.",
+                            "category": "Target Niche",
+                            "is_seasonal": False,
+                            "market_gap": f"Identified gap for high-quality {target_business} services in {area}.",
+                            "target_audience": "Local consumers and business partners",
+                            "investment_range": "₹5L - ₹15L",
+                            "potential_revenue": "₹20L/Year",
+                            "roi_potential": "95%",
+                            "implementation_difficulty": "Medium",
+                            "cac": "₹250",
+                            "market_size": "₹5Cr",
+                            "payback_period": "12 Months",
+                            "key_success_factors": ["Brand differentiation", "Hyper-local marketing", "Customer experience"],
+                            "six_month_plan": [
+                                {"month": "Month 1-2", "goal": "Setup & Validation"},
+                                {"month": "Month 3-4", "goal": "Go-to-Market Launch"},
+                                {"month": "Month 5-6", "goal": "Scaling & Optimization"}
+                            ],
+                            "demand_index": 85
+                        }]
             
             # NEW: Use geolocated official name if available for professional display
             display_area = area
@@ -341,14 +394,31 @@ class IntegratedBusinessIntelligence:
         
         # 1. Try Pollinations for a realistic AI-generated fallback
         try:
-            pollinations_prompt = f"Generate 12 high-fidelity, realistic business recommendations for {area}, India. {f'The first one MUST be a detailed Go/No-Go feedback for {target_business}.' if target_business else ''} Use catchy and professional Indian business names. Every item MUST have: business_name, description, category, investment_range (e.g. ₹15L), potential_revenue (e.g. ₹40L/Year), roi_potential (e.g. 85%), implementation_difficulty (Low/Medium/High), market_size, and payback_period. Return valid JSON ONLY."
+            if target_business:
+                pollinations_prompt = f"Generate exactly one high-fidelity, realistic business recommendation for '{target_business}' in {area}, India under category 'Target Niche'. Do not suggest any other unrelated businesses. The recommendation MUST have: business_name, description, category, investment_range (e.g. ₹15L), potential_revenue (e.g. ₹40L/Year), roi_potential (e.g. 85%), implementation_difficulty (Low/Medium/High), market_size, and payback_period. Return valid JSON ONLY."
+            else:
+                pollinations_prompt = f"Generate 12 high-fidelity, realistic business recommendations for {area}, India. Use catchy and professional Indian business names. Every item MUST have: business_name, description, category, investment_range (e.g. ₹15L), potential_revenue (e.g. ₹40L/Year), roi_potential (e.g. 85%), implementation_difficulty (Low/Medium/High), market_size, and payback_period. Return valid JSON ONLY."
             res = await self._call_pollinations_fallback(area, pollinations_prompt, language)
             if res and res.get("success") and res.get("recommendations"):
                 print(f"[FALLBACK-SUCCESS] Pollinations delivered neural fallback for {area}")
                 res["ai_source"] = "Neural Fallback Engine (Pollinations AI)"
                 
-                # Add specific go/no-go if target_business exists
-                if target_business and "analysis" in res:
+                if target_business:
+                    recs_filtered = []
+                    for r in res.get("recommendations", []):
+                        if r.get("category") == "Target Niche" or target_business.lower() in (r.get("business_name") or "").lower():
+                            r["category"] = "Target Niche"
+                            recs_filtered.append(r)
+                    if recs_filtered:
+                        res["recommendations"] = recs_filtered[:1]
+                    else:
+                        if res["recommendations"]:
+                            res["recommendations"][0]["category"] = "Target Niche"
+                            res["recommendations"][0]["business_name"] = target_business.title()
+                            res["recommendations"] = res["recommendations"][:1]
+                
+                # Add specific go/no-go if target_business exists and analysis is a dict
+                if target_business and isinstance(res.get("analysis"), dict):
                     res["analysis"]["go_no_go_analysis"] = {
                         "decision": "PROCEED WITH CAUTION",
                         "reasoning": f"Initial market scouting for {target_business} in {area} shows moderate competition. High startup cost but strong long-term ROI potential as the sector matures.",
@@ -362,93 +432,8 @@ class IntegratedBusinessIntelligence:
         # 2. Hardcoded High-Fidelity Backup (The ultimate safety net)
         import random
         
-        # If we have a target business, we inject it as the first one
         recs = []
         if target_business:
-            recs.append({
-                "business_name": target_business,
-                "description": f"Strategic evaluation for opening {target_business} in {area}. This analysis considers local demand, competitive landscape, and capital requirements.",
-                "category": "Direct Request",
-                "market_gap": f"Emerging demand for {target_business} in specialized corridors of {area}.",
-                "target_audience": "Specific local segments",
-                "investment_range": "₹25L - ₹45L",
-                "potential_revenue": "₹15L/Year",
-                "roi_potential": "72%",
-                "implementation_difficulty": "Medium",
-                "cac": "₹450",
-                "market_size": "₹5Cr",
-                "payback_period": "18 Months",
-                "key_success_factors": ["Location selection", "Strategic partnerships", "Cost management"],
-                "six_month_plan": [
-                    {"month": "Month 1-2", "goal": "Feasibility & Licensing"},
-                    {"month": "Month 3-4", "goal": "Setup & Vendor Onboarding"},
-                    {"month": "Month 5-6", "goal": "Pilot Launch"}
-                ]
-            })
-
-        niches = [
-            {"title": "Nirmal Jal Solutions", "cat": "CleanTech", "desc": "Providing modular greywater recycling systems for residential complexes in {area}."},
-            {"title": "Swad-Seva Cloud Kitchens", "cat": "FoodTech", "desc": "A hyper-local delivery-only kitchen specializing in health-conscious traditional cuisines found in {area}."},
-            {"title": "Bharat-Gati Logistics", "cat": "E-commerce", "desc": "Last-mile delivery fleet optimized for the specific terrain and traffic of {area}."},
-            {"title": "Kisan-Mitra Hydroponics", "cat": "AgriTech", "desc": "Automated vertical farming containers designed for urban rooftops and vacant lots in {area}."},
-            {"title": "Rozgar-Setu AI", "cat": "HR Tech", "desc": "AI-powered recruitment portal connecting blue-collar workers in {area} to verified roles."},
-            {"title": "Apna-Ghar Co-living", "cat": "Real Estate", "desc": "Curated co-living spaces for the growing remote workforce in {area}."},
-            {"title": "Kavach Security", "cat": "Security", "desc": "App-based personal protection service tailored for the {area} metropolitan region."},
-            {"title": "Surya-Shakti Solar", "cat": "Energy", "desc": "Solar panel leasing program for small businesses and residential societies in {area}."},
-            {"title": "Shanti Wellness Pods", "cat": "Health", "desc": "Smart meditation pods placed in high-traffic corporate hubs across {area}."},
-            {"title": "Gati-Electric EV Conversion", "cat": "Automotive", "desc": "Cost-effective electric vehicle conversion kits for commercial autos in {area}."},
-            {"title": "Shiksha-Kendram Labs", "cat": "EdTech", "desc": "Hands-on STEM learning centers filling the practical education gap in {area}."},
-            {"title": "Desi-Masala Spices", "cat": "CPG", "desc": "Artisanal spice blends sourced from farmers near {area}."},
-            {"title": "Vayu-Pure Air Systems", "cat": "HealthTech", "desc": "Smart indoor air purification systems for residential and commercial spaces in {area}."},
-            {"title": "Bharat-Build Modular", "cat": "Construction", "desc": "Cost-effective pre-fabricated home components for the expanding suburbs of {area}."},
-            {"title": "Mandi-Direct Logistics", "cat": "AgriTech", "desc": "Direct-from-farm supply chain for local grocery stores in {area}."},
-            {"title": "Eco-Pack Solutions", "cat": "Sustainability", "desc": "Biodegradable packaging for local e-commerce and food vendors in {area}."},
-            {"title": "Ayur-Scan Labs", "cat": "BioTech", "desc": "Personalized Ayurvedic wellness profiles based on genomic data in {area}."},
-            {"title": "Lokal-Link WiFi", "cat": "Telecom", "desc": "Community-managed high-speed mesh networks for rural outskirts of {area}."},
-            {"title": "Dhobi-Quick App", "cat": "Services", "desc": "On-demand laundry and fabric care with specialized care for Indian ethnic wear in {area}."},
-            {"title": "Siksha-Seva Tutoring", "cat": "EdTech", "desc": "Hyper-local doubt-solving centers for competitive exams (JEE/NEET) in {area}."},
-            {"title": "Krishi-Viman Drones", "cat": "AgriTech", "desc": "Drone-based pesticide spraying and crop monitoring service for farmers near {area}."},
-            {"title": "Pooja-Seva Kits", "cat": "E-commerce", "desc": "Subscription-based delivery of high-quality, ethically sourced ritual items in {area}."},
-            {"title": "Elderly-Care Connect", "cat": "Health", "desc": "Tech-enabled home assistance and companionship for the elderly population in {area}."},
-            {"title": "Auto-Care Smart Hub", "cat": "Services", "desc": "Predictive maintenance and app-based repair scheduling for local workshops in {area}."},
-            {"title": "Desi-Brew Beverages", "cat": "F&B", "desc": "Modernized traditional Indian beverages (Buttermilk, Lassi) in grab-and-go retail packs in {area}."},
-            {"title": "Skill-Bridge Academy", "cat": "EdTech", "desc": "Vocational training centers focused on high-demand digital skills for the youth of {area}."}
-        ]
-        
-        # 🧠 DYNAMIC COUNT: Randomize result count to avoid 'static' feel
-        target_count = random.randint(10, 14)
-        niche_count = target_count - (1 if target_business else 0)
-        selected_niches = random.sample(niches, min(len(niches), niche_count))
-        for n in selected_niches:
-            invest = random.randint(5, 50)
-            rev = invest * random.uniform(1.5, 3.5)
-            roi = random.randint(45, 185)
-            recs.append({
-                "business_name": n["title"],
-                "description": n["desc"].format(area=area),
-                "category": n["cat"],
-                "is_seasonal": random.choice([True, False, False, False]), # Mix seasonal in
-                "market_gap": f"Unserved demand for {n['cat'].lower()} in {area}.",
-                "target_audience": "Local entrepreneurs and residents",
-                "investment_range": f"₹{invest}L",
-                "potential_revenue": f"₹{rev:.1f}L/Year",
-                "roi_potential": f"{roi}%",
-                "implementation_difficulty": random.choice(["Low", "Medium", "High"]),
-                "cac": f"₹{random.randint(150, 800)}",
-                "market_size": f"₹{random.randint(5, 25)}Cr",
-                "payback_period": f"{random.randint(8, 24)} Months",
-                "key_success_factors": ["Hyper-local targeting", "Operational efficiency", "Quality assurance"],
-                "six_month_plan": [
-                    {"month": "Month 1-2", "goal": "Infrastructure Setup"},
-                    {"month": "Month 3-4", "goal": "Beta Launch"},
-                    {"month": "Month 5-6", "goal": "Scaling Ops"}
-                ]
-            })
-            
-        # 🎯 TARGET BUSINESS INJECTION: Ensure the specific idea is the #1 recommendation
-        if target_business:
-            # Create a high-fidelity recommendation for the target business
-            # Calculate realistic but optimistic numbers for the target
             invest = random.randint(3, 15)
             rev = invest * random.uniform(2.5, 4.5)
             roi = random.randint(85, 210)
@@ -477,9 +462,65 @@ class IntegratedBusinessIntelligence:
                 "retention_rate": f"{random.randint(65, 85)}%",
                 "demand_index": random.randint(75, 95)
             }
-            # Insert at the very beginning
-            recs.insert(0, target_rec)
+            recs.append(target_rec)
+        else:
+            niches = [
+                {"title": "Pavitra Jal Filtration", "cat": "CleanTech", "desc": "Small-scale community water purification and delivery service serving the local wards of {area}."},
+                {"title": "Zayka-e-Hind Cloud Kitchen", "cat": "FoodTech", "desc": "Delivery-only kitchen focusing on authentic regional breakfast and lunch thalis for the office-going crowd in {area}."},
+                {"title": "Gati-Shakti Last-Mile Logistics", "cat": "E-commerce", "desc": "Specialized e-commerce delivery fleet utilizing electric two-wheelers for dense neighborhoods in {area}."},
+                {"title": "Harit-Krishi Urban Farms", "cat": "AgriTech", "desc": "Hydroponic vegetable setups for high-end residential societies and restaurants in {area}."},
+                {"title": "Saksham-Rozgar Portal", "cat": "HR Tech", "desc": "Verified recruitment and training platform for local skilled workers and blue-collar staff in {area}."},
+                {"title": "Milap Co-living Spaces", "cat": "Real Estate", "desc": "Affordable, tech-enabled PG and co-living accommodations for students and young professionals in {area}."},
+                {"title": "Suraksha-Dost Security Services", "cat": "Security", "desc": "Community-focused security and surveillance solutions for gated societies and local markets in {area}."},
+                {"title": "Urja-Sanchay Solar Solutions", "cat": "Energy", "desc": "Affordable rooftop solar installation and maintenance services for small commercial buildings in {area}."},
+                {"title": "Sukoon Wellness Center", "cat": "Health", "desc": "Yoga and holistic wellness boutique tailored for the high-stress urban lifestyle in {area}."},
+                {"title": "Vidyarthi STEM Labs", "cat": "EdTech", "desc": "After-school activity centers teaching robotics and coding to kids in the growing residential areas of {area}."},
+                {"title": "Desi-Shakti Cold Pressed Oils", "cat": "CPG", "desc": "Artisanal, chemical-free oil extraction unit sourcing raw materials from farmers near {area}."},
+                {"title": "Vayu-Rakshak Air Systems", "cat": "HealthTech", "desc": "Installation of high-grade air purification and monitoring systems for schools and offices in {area}."},
+                {"title": "Nirman-Sathi Pre-fab", "cat": "Construction", "desc": "Cost-effective, quick-build modular components for small office expansions and home upgrades in {area}."},
+                {"title": "Kheti-Se-Kitchen Supply", "cat": "AgriTech", "desc": "B2B supply chain connecting local farms directly to restaurants and hotels in {area}."},
+                {"title": "Punar-Jivan Recycling", "cat": "Sustainability", "desc": "Organized dry waste collection and upcycling service for local small businesses in {area}."},
+                {"title": "Ayur-Siddha Wellness", "cat": "BioTech", "desc": "Traditional Ayurvedic diagnostics enhanced by modern health tracking for residents of {area}."},
+                {"title": "Gramin-Connect WiFi", "cat": "Telecom", "desc": "Low-cost high-speed internet distribution for the semi-urban outskirts of {area}."},
+                {"title": "Istri-Wala Digital Laundry", "cat": "Services", "desc": "Modernized steam-press and laundry service with doorstep pickup/drop for professional neighborhoods in {area}."},
+                {"title": "Abhyas Coaching Academy", "cat": "EdTech", "desc": "Specialized coaching for regional competitive exams and government job preparation in {area}."},
+                {"title": "Krishi-Vigyan Drones", "cat": "AgriTech", "desc": "Agricultural drone services for crop spraying and soil analysis for the farmlands surrounding {area}."},
+                {"title": "Shraddha Puja Kits", "cat": "E-commerce", "desc": "Subscription-based delivery of high-quality, pre-packaged ritual items for local festivals in {area}."},
+                {"title": "Sathi Elder-Care", "cat": "Health", "desc": "Personalized home assistance and healthcare coordination for the elderly population in {area}."},
+                {"title": "Vahan-Seva Smart Workshop", "cat": "Services", "desc": "Multi-brand car and bike repair workshop with transparent app-based tracking in {area}."},
+                {"title": "Chai-Chowk Cafe", "cat": "F&B", "desc": "Modernized Indian tea-room experience focusing on local snacks and premium tea blends for {area} residents."}
+            ]
             
+            # 🧠 DYNAMIC COUNT: Randomize result count to avoid 'static' feel
+            target_count = random.randint(12, 14)
+            selected_niches = random.sample(niches, min(len(niches), target_count))
+            for n in selected_niches:
+                # REALISTIC FINANCIALS: Grounded numbers for 2026 Indian market
+                invest = random.randint(3, 25) # More realistic range for SMBs (3L to 25L)
+                rev = invest * random.uniform(0.8, 1.8) # Realistic yearly revenue multiplier (80% to 180% of capex)
+                roi = random.randint(15, 45) # Grounded ROI (15% to 45% is realistic for a healthy SMB)
+                recs.append({
+                    "business_name": n["title"],
+                    "description": n["desc"].format(area=area),
+                    "category": n["cat"],
+                    "is_seasonal": random.choice([True, True, False, False]), # 50% chance to be seasonal to avoid empty UI sections
+                    "market_gap": f"Unserved demand for {n['cat'].lower()} in {area}.",
+                    "target_audience": "Local entrepreneurs and residents",
+                    "investment_range": f"₹{invest}L",
+                    "potential_revenue": f"₹{rev:.1f}L/Year",
+                    "roi_potential": f"{roi}%",
+                    "implementation_difficulty": random.choice(["Low", "Medium", "High"]),
+                    "cac": f"₹{random.randint(150, 800)}",
+                    "market_size": f"₹{random.randint(5, 25)}Cr",
+                    "payback_period": f"{random.randint(8, 24)} Months",
+                    "key_success_factors": ["Hyper-local targeting", "Operational efficiency", "Quality assurance"],
+                    "six_month_plan": [
+                        {"month": "Month 1-2", "goal": "Infrastructure Setup"},
+                        {"month": "Month 3-4", "goal": "Beta Launch"},
+                        {"month": "Month 5-6", "goal": "Scaling Ops"}
+                    ]
+                })
+
         # 📊 DYNAMIC SUMMARY GEN
         confidence = random.randint(88, 96)
         gap_intensity = random.choice(["Critical", "High", "Significant"])
@@ -557,7 +598,7 @@ class IntegratedBusinessIntelligence:
         return None
 
 
-    async def _call_gemini_flash(self, area: str, cluster_prompt: str, lang: str) -> Optional[Dict]:
+    async def _call_gemini_flash(self, area: str, cluster_prompt: str, lang: str, target_business: Optional[str] = None) -> Optional[Dict]:
         """Professional Analysis via Google Gemini 1.5 Flash (2026 Production Standard)"""
         if not self.gemini_key:
             return None
@@ -602,7 +643,7 @@ class IntegratedBusinessIntelligence:
                 # PRIORITY 1: Claude Critic Layer Integration
                 if self.claude_key and data.get("recommendations"):
                     print("[CRITIC] Engaging Claude for quality consensus...")
-                    data = await self._call_claude_critic(data, cluster_prompt)
+                    data = await self._call_claude_critic(data, cluster_prompt, target_business=target_business)
                     
                 return {
                     "success": True,
@@ -614,11 +655,13 @@ class IntegratedBusinessIntelligence:
             print(f"[WARN] Gemini 2.5 Flash Layer Exception: {e}")
         return None
 
-    async def _call_claude_critic(self, original_data: Dict, market_context: str) -> Dict:
+    async def _call_claude_critic(self, original_data: Dict, market_context: str, target_business: Optional[str] = None) -> Dict:
         """Priority 1: Claude Critic Layer (Consensus Engine)"""
         try:
             from anthropic import AsyncAnthropic
             client = AsyncAnthropic(api_key=self.claude_key)
+            
+            volume_rule = f"VOLUME: Limit the list to exactly ONE high-fidelity recommendation for '{target_business}'. Do not suggest any other unrelated businesses." if target_business else "VOLUME: Maintain 10-12 high-fidelity items. DO NOT FILTER TO LESS THAN 10."
             
             prompt = f"""
             Role: Lead Strategic Critic & Validator
@@ -631,7 +674,7 @@ class IntegratedBusinessIntelligence:
             1. Real-world feasibility in 2026.
             2. Calculation precision (ROI, Breakeven).
             3. Consensus Scoring (Eliminate generic ideas).
-            4. VOLUME: Maintain 10-12 high-fidelity items. DO NOT FILTER TO LESS THAN 10.
+            4. {volume_rule}
             
             Return the full JSON structure (including analysis and refined recommendations).
             """
@@ -792,7 +835,7 @@ class IntegratedBusinessIntelligence:
                 if attempt > 0:
                     await push_ws_status(f"Calibrating Neural Synthesis (Step {attempt+1})...")
                 
-                gemini_result = await self._call_gemini_flash(area, cluster_prompt, lang)
+                gemini_result = await self._call_gemini_flash(area, cluster_prompt, lang, target_business=target_business)
                 if gemini_result and gemini_result.get("success") and gemini_result.get("recommendations"):
                     return gemini_result
             except Exception as e:
@@ -946,9 +989,11 @@ class IntegratedBusinessIntelligence:
         # Increase context usage for higher fidelity analysis (formerly limited to 800)
         context_limit = 4000 
         
+        recs_count_desc = f"exactly ONE specific, actionable business opportunity for '{target_business}'" if target_business else "12-15 specific, actionable business opportunities"
+        
         enhanced_prompt = f"""
-        Analyze current market conditions and generate 12-15 specific, actionable business opportunities for {area}.
-        {f"CRITICAL MISSION: The user specifically wants to evaluate '{target_business}'. Your #1 recommendation MUST be a detailed analysis of this business idea." if target_business else ""}
+        Analyze current market conditions and generate {recs_count_desc} for {area}.
+        {f"CRITICAL MISSION: The user specifically wants to evaluate '{target_business}'. Your ONLY recommendation MUST be a detailed analysis of this specific business idea. Do not suggest any other business concepts." if target_business else ""}
         Market Context: {context[:context_limit] if context else "Analyze area for emerging business opportunities."}
         
         CRITICAL: Use catchy, easy-to-pronounce, and professional Indian business names. 
@@ -971,9 +1016,9 @@ class IntegratedBusinessIntelligence:
                "market_size": "...", 
                "key_success_factors": "...",
                "six_month_plan": [
-                   {"month": "Month 1-2", "goal": "..."},
-                   {"month": "Month 3-4", "goal": "..."},
-                   {"month": "Month 5-6", "goal": "..."}
+                   {{"month": "Month 1-2", "goal": "..."}},
+                   {{"month": "Month 3-4", "goal": "..."}},
+                   {{"month": "Month 5-6", "goal": "..."}}
                ]
            }}]}}
         2. Focus on localized gaps found in the provided context for {area}.
@@ -1271,7 +1316,7 @@ class IntegratedBusinessIntelligence:
         # Try Gemini 2.0 Flash first
         if self.gemini_key:
             try:
-                gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={self.gemini_key}"
+                gemini_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.gemini_key}"
                 async with httpx.AsyncClient(timeout=30.0) as client:
                     resp = await client.post(gemini_url, json={
                         "contents": [{"parts": [{"text": f"{system_prompt}\n\n{prompt}"}]}],
@@ -1384,31 +1429,36 @@ class IntegratedBusinessIntelligence:
         {{
             "funding_required": "budget needed (e.g. ₹10L - ₹15L)",
             "estimated_revenue": "estimated monthly earnings (e.g. ₹2L - ₹4L)",
-            "roi_percentage": number (annual profit potential, e.g. 60), 
-            "payback_period": "time to get money back (e.g. 12-15 Months)",
+            "roi_potential": "85%",
+            "roi_percentage": 85,
+            "payback_period": "12-15 Months",
             "startup_difficulty": "Low/Medium/Hard",
-            "initial_team_size": "number of people needed (e.g. 3-4 helpers)",
+            "initial_team_size": "3-4 helpers",
             "market_size": "simple description of local opportunity",
             "competition_level": "Low/High/Medium",
-            "demand_index": number (0-100),
+            "demand_index": 85,
             "profit_niches": [
-                {{"niche": "specific way to make extra profit", "yield": percentage_number}}
+                {{"niche": "specific way to make extra profit", "yield": 20}}
             ],
             "strategic_recommendations": [
                 {{"title": "Easy Next Step", "description": "Practical advice on what to do first"}}
             ],
-            "be_period": "Months until breakeven",
-            "m1_traffic": "Est. Month 1 Customers",
-            "retention_rate": "Est. Customer Loyalty %",
-            "six_month_plan": ["Phase 1...", "Phase 2...", "Phase 3...", "Phase 4...", "Phase 5...", "Phase 6..."],
+            "be_period": "12 Months",
+            "m1_traffic": "500+",
+            "retention_rate": "75%",
+            "six_month_plan": [
+                {{"month": "Month 1-2", "goal": "Setup & Licensing"}},
+                {{"month": "Month 3-4", "goal": "Marketing & Pilot"}},
+                {{"month": "Month 5-6", "goal": "Growth & Scale"}}
+            ],
             "key_success_factors": ["Success Tip 1", "Success Tip 2", "Success Tip 3"],
             "sustainability_metrics": {{
-                "growth_velocity": "e.g. High probability of market capture within 18 months...",
-                "system_resilience": "e.g. Low operational fragility detected due to...",
-                "scaling_leverage": "e.g. Franchise-ready model with procedural documentation...",
-                "stability_rating": "e.g. High-Resilience",
-                "scaling_potential": "e.g. Exponential",
-                "sustainability_strategy": "e.g. Analysis suggests focusing on automated supply chain..."
+                "growth_velocity": "High",
+                "system_resilience": "Medium",
+                "scaling_leverage": "High",
+                "stability_rating": "Strong",
+                "scaling_potential": "Exponential",
+                "sustainability_strategy": "Analysis suggests focusing on automated supply chain..."
             }}
         }}
         """
@@ -1453,7 +1503,15 @@ class IntegratedBusinessIntelligence:
                 if city.lower() != target_city and t.lower().startswith(city.lower()):
                     t = re.sub(rf"(?i)^{city}\s*", "", t)
             
-            r["title"] = t.strip().title()
+            r["business_name"] = t.strip().title()
+            r["title"] = r["business_name"]
+            
+            # Ensure critical fields have safe string types for frontend compatibility
+            if "roi_potential" in r:
+                r["roi_potential"] = str(r["roi_potential"])
+            if "implementation_difficulty" in r:
+                r["implementation_difficulty"] = str(r["implementation_difficulty"])
+                
             p.append(r)
         return p
 
