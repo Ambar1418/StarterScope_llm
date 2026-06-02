@@ -1,23 +1,28 @@
 import { Link } from "react-router-dom";
 import { Hexagon, Github, Heart, Linkedin, Twitter } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
+import { useTranslation } from "@/utils/translations";
 
 const productLinks = [
-  { label: "Features", to: "/#features" },
-  { label: "Dashboard", to: "/dashboard" },
-  { label: "Pricing", to: "/#pricing" },
-  { label: "Roadmap", to: "/roadmap" },
+  { label: "features", to: "/#features" },
+  { label: "dashboard", to: "/dashboard" },
+  { label: "pricing", to: "/#pricing" },
+  { label: "roadmap", to: "/roadmap" },
 ];
 
 const companyLinks = [
-  { label: "About", to: "/#about" },
-  { label: "Contact", to: "/contact" },
-  { label: "Privacy", to: "/contact" },
-  { label: "Terms", to: "/contact" },
+  { label: "about", to: "/#about" },
+  { label: "contact", to: "/contact" },
+  { label: "privacy", to: "/contact" },
+  { label: "terms", to: "/contact" },
 ];
 
 export function Footer() {
+  const { lang } = useLanguage();
+  const { t } = useTranslation(lang);
+
   return (
-    <footer className="bg-background border-t border-border relative">
+    <footer className="bg-background border-t border-border relative z-0">
       <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-accent-emerald via-transparent to-vivid-blue" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -32,21 +37,23 @@ export function Footer() {
               </div>
             </Link>
             <p className="font-body text-[15px] text-text-secondary mt-4 max-w-xs leading-relaxed">
-              Neural intelligence for the next generation of Indian entrepreneurs.
+              {t("footerBrandDesc")}
             </p>
             <div className="mt-6 space-y-1">
               <p className="font-mono text-xs text-text-muted flex items-center gap-1">
-                Built with{"  "}
-                <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 animate-pulse" aria-hidden="true" />
-               
-                by Team JAVA
+                {t("footerBuiltBy").split(" ❤️ ").map((part, i) => (
+                  <span key={i} className="flex items-center gap-1">
+                    {part}
+                    {i === 0 && <Heart className="w-3.5 h-3.5 text-red-500 fill-red-500 animate-pulse" aria-hidden="true" />}
+                  </span>
+                ))}
               </p>
             </div>
           </div>
 
           {/* Product */}
           <div className="lg:col-span-2">
-            <h4 className="font-display font-semibold text-sm text-text-primary mb-4">Product</h4>
+            <h4 className="font-display font-semibold text-sm text-text-primary mb-4">{t("product")}</h4>
             <ul className="space-y-3">
               {productLinks.map((l) => (
                 <li key={l.label}>
@@ -54,7 +61,7 @@ export function Footer() {
                     to={l.to}
                     className="font-body text-sm text-text-secondary hover:text-text-primary hover:translate-x-1 inline-block transition-all duration-200"
                   >
-                    {l.label}
+                    {t(l.label as any)}
                   </Link>
                 </li>
               ))}
@@ -63,7 +70,7 @@ export function Footer() {
 
           {/* Company */}
           <div className="lg:col-span-2">
-            <h4 className="font-display font-semibold text-sm text-text-primary mb-4">Company</h4>
+            <h4 className="font-display font-semibold text-sm text-text-primary mb-4">{t("company")}</h4>
             <ul className="space-y-3">
               {companyLinks.map((l) => (
                 <li key={l.label}>
@@ -71,7 +78,7 @@ export function Footer() {
                     to={l.to}
                     className="font-body text-sm text-text-secondary hover:text-text-primary hover:translate-x-1 inline-block transition-all duration-200"
                   >
-                    {l.label}
+                    {t(l.label as any)}
                   </Link>
                 </li>
               ))}
@@ -80,7 +87,7 @@ export function Footer() {
 
           {/* Connect */}
           <div className="lg:col-span-3">
-            <h4 className="font-display font-semibold text-sm text-text-primary mb-4">Connect</h4>
+            <h4 className="font-display font-semibold text-sm text-text-primary mb-4">{t("connect")}</h4>
             <div className="flex gap-3">
               {[
                 { Icon: Github, href: "#" },
@@ -102,10 +109,10 @@ export function Footer() {
 
         <div className="border-t border-border pt-6 mt-12 flex flex-col sm:flex-row justify-between items-center gap-3">
           <p className="font-body text-xs text-text-muted">
-            © 2026 StarterScope. All rights reserved.
+            {t("footerRights")}
           </p>
           <p className="font-body text-xs text-text-muted">
-            Privacy Policy · Terms of Service
+            {t("footerPrivacyTerms")}
           </p>
         </div>
       </div>

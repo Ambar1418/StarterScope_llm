@@ -1,38 +1,43 @@
 import { motion } from "framer-motion";
 import { MapPin, Brain, Target } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
+import { useTranslation } from "@/utils/translations";
 
 const steps = [
   {
     n: "01",
     Icon: MapPin,
-    title: "Drop Your Location",
-    desc: "Enter any Indian city, district, or use GPS for instant geo-anchored analysis.",
+    titleKey: "step1Title" as const,
+    descKey: "step1Desc" as const,
   },
   {
     n: "02",
     Icon: Brain,
-    title: "AI Scouts the Market",
-    desc: "Our scouting swarm analyzes search, social, and business data in real-time.",
+    titleKey: "step2Title" as const,
+    descKey: "step2Desc" as const,
   },
   {
     n: "03",
     Icon: Target,
-    title: "Get Your Roadmap",
-    desc: "Validated recommendations with financials, risks, and a launch blueprint.",
+    titleKey: "step3Title" as const,
+    descKey: "step3Desc" as const,
   },
 ];
 
 export function HowItWorks() {
+  const { lang } = useLanguage();
+  const { t } = useTranslation(lang);
+
   return (
     <section id="how-it-works" className="py-24 bg-background relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto">
-          <span className="eyebrow text-accent-emerald">◈ THE PROCESS ◈</span>
+          <span className="eyebrow text-accent-emerald">{t("processBadge")}</span>
           <h2 className="mt-4 font-display font-extrabold text-3xl sm:text-4xl lg:text-5xl text-text-primary">
-            Three Steps to Market Clarity
+            {t("threeStepsTitle")}
           </h2>
           <p className="mt-4 font-body text-base sm:text-lg text-text-secondary">
-            From a single location pin to a venture-ready strategic plan, in minutes.
+            {t("threeStepsSubtitle")}
           </p>
         </div>
 
@@ -78,13 +83,13 @@ export function HowItWorks() {
               </motion.div>
 
               <p className="mt-6 font-mono text-[11px] text-text-muted tracking-widest">
-                STEP {s.n}
+                {t("stepLabel")} {s.n}
               </p>
               <h3 className="mt-2 font-display font-bold text-xl text-text-primary">
-                {s.title}
+                {t(s.titleKey as any)}
               </h3>
               <p className="mt-3 font-body text-[15px] text-text-secondary leading-[1.7]">
-                {s.desc}
+                {t(s.descKey as any)}
               </p>
             </motion.div>
           ))}

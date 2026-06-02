@@ -13,7 +13,7 @@ const queryClient = new QueryClient();
 
 export function ClientProviders({ children }: { children: ReactNode }) {
   return (
-    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || ""}>
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID || "12345-placeholder.apps.googleusercontent.com"}>
       <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
         <QueryClientProvider client={queryClient}>
           <LanguageProvider>

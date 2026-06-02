@@ -8,70 +8,75 @@ import {
   ShieldCheck,
   ArrowRight,
 } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
+import { useTranslation } from "@/utils/translations";
 
 const features = [
   {
     Icon: Telescope,
-    title: "AI Market Analysis",
-    desc: "5-layer neural synthesis of real-time market data across search, social, and trade signals.",
+    titleKey: "feat1Title" as const,
+    descKey: "feat1Desc" as const,
     bg: "from-accent-emerald-light to-transparent",
     iconColor: "text-accent-emerald",
   },
   {
     Icon: MapPin,
-    title: "Hyper-Local Intelligence",
-    desc: "GPS + OSM verification ensures 100% real, on-the-ground locations — never stock data.",
+    titleKey: "feat2Title" as const,
+    descKey: "feat2Desc" as const,
     bg: "from-vivid-blue-light to-transparent",
     iconColor: "text-vivid-blue",
   },
   {
     Icon: Lightbulb,
-    title: "Smart Recommendations",
-    desc: "Ranked opportunities with ROI estimates in ₹, capital needs, and time-to-break-even.",
+    titleKey: "feat3Title" as const,
+    descKey: "feat3Desc" as const,
     bg: "from-vivid-amber/10 to-transparent",
     iconColor: "text-vivid-amber",
   },
   {
     Icon: Map,
-    title: "Strategic Roadmaps",
-    desc: "A full business plan with milestones, budget, and a phased launch timeline.",
+    titleKey: "feat4Title" as const,
+    descKey: "feat4Desc" as const,
     bg: "from-vivid-violet/10 to-transparent",
     iconColor: "text-vivid-violet",
   },
   {
     Icon: Swords,
-    title: "Competitive Analysis",
-    desc: "Live competitor density, gap mapping, and positioning insights for your micro-market.",
+    titleKey: "feat5Title" as const,
+    descKey: "feat5Desc" as const,
     bg: "from-vivid-rose/10 to-transparent",
     iconColor: "text-vivid-rose",
   },
   {
     Icon: ShieldCheck,
-    title: "Alpha Vault",
-    desc: "Save, archive, and revisit your intelligence nodes. Every scan becomes an asset.",
+    titleKey: "feat6Title" as const,
+    descKey: "feat6Desc" as const,
     bg: "from-accent-emerald-light to-transparent",
     iconColor: "text-accent-emerald",
   },
 ];
 
 export function FeaturesGrid() {
+  const { lang } = useLanguage();
+  const { t } = useTranslation(lang);
+
   return (
     <section id="features" className="py-24 bg-surface border-y border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto">
-          <span className="eyebrow text-accent-emerald">◈ CAPABILITIES ◈</span>
+          <span className="eyebrow text-accent-emerald">{t("capabilitiesBadge")}</span>
           <h2 className="mt-4 font-display font-extrabold text-3xl sm:text-4xl lg:text-5xl text-text-primary">
-            Everything You Need to Decide
+            {t("featuresTitle")}
           </h2>
           <p className="mt-4 font-body text-base sm:text-lg text-text-secondary">
-            Six core engines working in concert to give you decision-grade clarity.
+            {t("featuresSubtitle")}
           </p>
         </div>
 
         <div className="mt-14 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {features.map((f, i) => (
             <motion.div
-              key={f.title}
+              key={f.titleKey}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: "-60px" }}
@@ -80,18 +85,18 @@ export function FeaturesGrid() {
               className="group p-7 rounded-2xl bg-background border border-border transition-all duration-200 hover:border-accent-emerald/25 hover:shadow-card-hover"
             >
               <div
-                className={`w-13 h-13 w-[52px] h-[52px] rounded-xl bg-gradient-to-br ${f.bg} flex items-center justify-center`}
+                className={`w-[52px] h-[52px] rounded-xl bg-gradient-to-br ${f.bg} flex items-center justify-center`}
               >
                 <f.Icon className={`w-6 h-6 ${f.iconColor}`} strokeWidth={2} />
               </div>
               <h3 className="mt-5 font-display font-semibold text-[17px] text-text-primary">
-                {f.title}
+                {t(f.titleKey)}
               </h3>
               <p className="mt-2 font-body text-sm text-text-secondary leading-[1.65]">
-                {f.desc}
+                {t(f.descKey)}
               </p>
               <div className="mt-4 flex items-center gap-1.5 text-accent-emerald text-[13px] font-medium opacity-0 -translate-y-1 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300">
-                Learn more <ArrowRight className="w-3.5 h-3.5" />
+                {t("learnMore")} <ArrowRight className="w-3.5 h-3.5" />
               </div>
             </motion.div>
           ))}

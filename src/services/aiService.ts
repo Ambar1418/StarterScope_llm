@@ -6,10 +6,19 @@ export interface ChatMessage {
   timestamp: string;
 }
 
-const groq = new Groq({
-  apiKey: import.meta.env.VITE_GROQ_API_KEY,
-  dangerouslyAllowBrowser: true 
-});
+let groq: Groq | null = null;
+const apiKey = import.meta.env.VITE_GROQ_API_KEY;
+
+if (apiKey && apiKey !== "your_groq_key_here") {
+  try {
+    groq = new Groq({
+      apiKey,
+      dangerouslyAllowBrowser: true 
+    });
+  } catch (e) {
+    console.error("Failed to initialize Groq client:", e);
+  }
+}
 
 const SYSTEM_PROMPT = `
 You are StarterScope Assistant, a premium AI-powered market intelligence assistant.
@@ -33,6 +42,11 @@ Response Tone: Product-level SaaS assistant. Strategic and efficient.
 export async function* streamChatResponse(
   messages: ChatMessage[]
 ): AsyncGenerator<string> {
+  if (!groq) {
+    yield "### StarterScope Assistant Offline\n- The `VITE_GROQ_API_KEY` is not configured in your `.env.local` file.\n- Please provide a valid Groq API key to activate the live assistant.";
+    return;
+  }
+
   try {
     // Maintain context memory (last 5 messages + system prompt)
     const contextWindow = messages.slice(-6); 

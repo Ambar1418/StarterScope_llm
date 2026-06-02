@@ -3,15 +3,18 @@ import { Link, NavLink as RRNavLink, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ArrowRight, Hexagon } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
+import { LanguageToggle } from "./LanguageToggle";
 import { SsButton } from "./ss/SsButton";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
+import { useTranslation, translations } from "@/utils/translations";
 
 const navItems = [
-  { label: "Features", to: "/#features" },
-  { label: "How It Works", to: "/#how-it-works" },
-  { label: "Pricing", to: "/#pricing" },
-  { label: "Dashboard", to: "/dashboard" },
+  { label: "Features", to: "/#features", key: "features" as const },
+  { label: "How It Works", to: "/#how-it-works", key: "howItWorks" as const },
+  { label: "Pricing", to: "/#pricing", key: "pricing" as const },
+  { label: "Dashboard", to: "/dashboard", key: "dashboard" as const },
 ];
 
 function Logo() {
@@ -36,6 +39,8 @@ export function Navbar() {
   const [open, setOpen] = useState(false);
   const location = useLocation();
   const { isAuthenticated, signOut, user } = useAuth();
+  const { lang } = useLanguage();
+  const { t } = useTranslation(lang);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -71,7 +76,7 @@ export function Navbar() {
                     : "text-text-secondary hover:text-text-primary"
                 )}
               >
-                {item.label}
+                {t(item.key)}
                 {location.pathname === "/" && location.hash === item.to.slice(1) && (
                   <motion.span
                     layoutId="nav-underline"
@@ -92,7 +97,7 @@ export function Navbar() {
               >
                 {({ isActive }) => (
                   <>
-                    {item.label}
+                    {t(item.key)}
                     {isActive && (
                       <motion.span
                         layoutId="nav-underline"
@@ -108,16 +113,17 @@ export function Navbar() {
 
         <div className="flex items-center gap-2 sm:gap-3">
           <ThemeToggle />
+          <LanguageToggle />
           {!isAuthenticated ? (
             <>
               <Link to="/auth" className="hidden sm:inline-flex">
                 <SsButton variant="ghost" size="sm">
-                  Sign In
+                  {t("signIn")}
                 </SsButton>
               </Link>
               <Link to="/dashboard" className="hidden sm:inline-flex">
                 <SsButton variant="primary" size="sm">
-                  Get Started <ArrowRight className="w-4 h-4" />
+                  {t("getStarted")} <ArrowRight className="w-4 h-4" />
                 </SsButton>
               </Link>
             </>
@@ -125,11 +131,11 @@ export function Navbar() {
             <>
               <Link to="/profile" className="hidden sm:inline-flex">
                 <SsButton variant="ghost" size="sm">
-                  {user?.name ? user.name.split(" ")[0] : "Profile"}
+                  {user?.name ? user.name.split(" ")[0] : t("profile")}
                 </SsButton>
               </Link>
               <SsButton onClick={signOut} variant="primary" size="sm" className="hidden sm:inline-flex">
-                Logout
+                {t("logout")}
               </SsButton>
             </>
           )}
@@ -178,7 +184,7 @@ export function Navbar() {
                     to={item.to}
                     className="flex items-center px-6 h-14 text-text-primary font-body text-base border-l-2 border-transparent hover:border-accent-emerald hover:bg-elevated transition-colors"
                   >
-                    {item.label}
+                    {t(item.key)}
                   </Link>
                 ))}
               </nav>
@@ -187,12 +193,12 @@ export function Navbar() {
                   <>
                     <Link to="/auth" className="block">
                       <SsButton variant="secondary" className="w-full">
-                        Sign In
+                        {t("signIn")}
                       </SsButton>
                     </Link>
                     <Link to="/dashboard" className="block">
                       <SsButton variant="primary" className="w-full">
-                        Get Started <ArrowRight className="w-4 h-4" />
+                        {t("getStarted")} <ArrowRight className="w-4 h-4" />
                       </SsButton>
                     </Link>
                   </>
@@ -200,11 +206,11 @@ export function Navbar() {
                   <>
                     <Link to="/profile" className="block">
                       <SsButton variant="secondary" className="w-full">
-                        Profile
+                        {t("profile")}
                       </SsButton>
                     </Link>
                     <SsButton onClick={signOut} variant="primary" className="w-full">
-                      Logout
+                      {t("logout")}
                     </SsButton>
                   </>
                 )}

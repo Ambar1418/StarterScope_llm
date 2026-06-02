@@ -4,6 +4,8 @@ import { Check, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { SsButton } from "@/components/ss/SsButton";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/context/LanguageContext";
+import { useTranslation, translatePricingString } from "@/utils/translations";
 
 interface PlanDef {
   name: string;
@@ -72,6 +74,8 @@ const plans: PlanDef[] = [
 
 export function PricingSection({ standalone = false }: { standalone?: boolean }) {
   const [billing, setBilling] = useState<"monthly" | "annual">("monthly");
+  const { lang } = useLanguage();
+  const { t } = useTranslation(lang);
 
   return (
     <section
@@ -83,12 +87,12 @@ export function PricingSection({ standalone = false }: { standalone?: boolean })
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto">
-          <span className="eyebrow text-accent-emerald">◈ PRICING ◈</span>
+          <span className="eyebrow text-accent-emerald">{t("pricingBadge")}</span>
           <h2 className="mt-4 font-display font-extrabold text-3xl sm:text-4xl lg:text-5xl text-text-primary">
-            Simple, Transparent Pricing
+            {t("pricingTitle")}
           </h2>
           <p className="mt-4 font-body text-base sm:text-lg text-text-secondary">
-            Start free. Scale when you're ready.
+            {t("pricingSubtitle")}
           </p>
 
           <div className="mt-8 inline-flex items-center gap-3">
@@ -102,7 +106,7 @@ export function PricingSection({ standalone = false }: { standalone?: boolean })
                     : "text-text-secondary"
                 )}
               >
-                Monthly
+                {t("monthlyBilling")}
               </button>
               <button
                 onClick={() => setBilling("annual")}
@@ -113,12 +117,12 @@ export function PricingSection({ standalone = false }: { standalone?: boolean })
                     : "text-text-secondary"
                 )}
               >
-                Annual
+                {t("annualBilling")}
               </button>
             </div>
             {billing === "annual" && (
               <span className="text-xs font-mono px-2 py-1 rounded-md bg-vivid-amber/10 text-vivid-amber border border-vivid-amber/20">
-                Save 20%
+                {t("save20")}
               </span>
             )}
           </div>
@@ -143,28 +147,28 @@ export function PricingSection({ standalone = false }: { standalone?: boolean })
               {p.highlight === "popular" && (
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                   <span className="bg-accent-emerald text-accent-emerald-foreground text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-wider">
-                    Most Popular
+                    {t("mostPopular")}
                   </span>
                 </div>
               )}
               {p.highlight === "value" && (
                 <div className="absolute top-4 right-4">
                   <span className="text-[10px] font-mono text-vivid-blue uppercase tracking-widest">
-                    Best Value
+                    {t("bestValue")}
                   </span>
                 </div>
               )}
 
               <h3 className="font-display font-bold text-xl text-text-primary">
-                {p.name}
+                {translatePricingString(p.name, lang)}
               </h3>
               <div className="mt-4 flex items-baseline gap-1">
                 <span className="font-display font-extrabold text-[42px] text-text-primary">
                   ₹{p.price[billing].toLocaleString()}
                 </span>
-                <span className="font-body text-base text-text-muted">/mo</span>
+                <span className="font-body text-base text-text-muted">{t("perMonth")}</span>
               </div>
-              <p className="mt-1 font-body text-sm text-text-muted">{p.desc}</p>
+              <p className="mt-1 font-body text-sm text-text-muted">{translatePricingString(p.desc, lang)}</p>
 
               <div className="my-6 h-px bg-border" />
 
@@ -184,7 +188,7 @@ export function PricingSection({ standalone = false }: { standalone?: boolean })
                           : "text-text-muted line-through"
                       )}
                     >
-                      {f.label}
+                      {translatePricingString(f.label, lang)}
                     </span>
                   </li>
                 ))}
@@ -192,7 +196,7 @@ export function PricingSection({ standalone = false }: { standalone?: boolean })
 
               <Link to="/dashboard" className="block mt-8">
                 <SsButton variant={p.variant} className="w-full">
-                  {p.cta}
+                  {translatePricingString(p.cta, lang)}
                 </SsButton>
               </Link>
             </motion.div>

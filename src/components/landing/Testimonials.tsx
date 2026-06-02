@@ -1,4 +1,6 @@
 import { Star } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
+import { useTranslation, translateTestimonialString } from "@/utils/translations";
 
 interface T {
   quote: string;
@@ -48,7 +50,7 @@ const testimonials: T[] = [
   },
 ];
 
-function Card({ t }: { t: T }) {
+function Card({ t, lang }: { t: T; lang: any }) {
   return (
     <div className="w-[340px] flex-shrink-0 glass-card p-7">
       <div className="flex gap-1">
@@ -57,7 +59,7 @@ function Card({ t }: { t: T }) {
         ))}
       </div>
       <p className="mt-3 font-body text-[15px] text-text-secondary italic leading-[1.75]">
-        "{t.quote}"
+        "{translateTestimonialString(t.quote, lang)}"
       </p>
       <div className="mt-5 flex items-center gap-3">
         <div
@@ -70,7 +72,7 @@ function Card({ t }: { t: T }) {
             {t.name}
           </div>
           <div className="font-body text-[13px] text-text-muted">
-            {t.role}, {t.city}
+            {translateTestimonialString(t.role, lang)}, {translateTestimonialString(t.city, lang)}
           </div>
         </div>
       </div>
@@ -79,14 +81,17 @@ function Card({ t }: { t: T }) {
 }
 
 export function Testimonials() {
+  const { lang } = useLanguage();
+  const { t } = useTranslation(lang);
   const doubled = [...testimonials, ...testimonials];
+
   return (
     <section className="py-24 bg-background overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center max-w-2xl mx-auto">
-          <span className="eyebrow text-accent-emerald">◈ TESTIMONIALS ◈</span>
+          <span className="eyebrow text-accent-emerald">{t("testimonialsBadge")}</span>
           <h2 className="mt-4 font-display font-extrabold text-3xl sm:text-4xl lg:text-5xl text-text-primary">
-            Entrepreneurs Trust StarterScope
+            {t("testimonialsTitle")}
           </h2>
         </div>
       </div>
@@ -97,8 +102,8 @@ export function Testimonials() {
         <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
 
         <div className="flex gap-5 animate-scroll-x hover:[animation-play-state:paused] w-max">
-          {doubled.map((t, i) => (
-            <Card key={i} t={t} />
+          {doubled.map((test, i) => (
+            <Card key={i} t={test} lang={lang} />
           ))}
         </div>
       </div>

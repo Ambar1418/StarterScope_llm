@@ -5,6 +5,8 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { useSearch } from "@/context/SearchContext";
 import { SsBadge } from "@/components/ss/SsBadge";
+import { useLanguage } from "@/context/LanguageContext";
+import { useTranslation } from "@/utils/translations";
 
 const phases = [
   {
@@ -44,8 +46,48 @@ const phases = [
   },
 ];
 
+const translateRoadmapString = (str: string, lang: "en" | "hi") => {
+  if (lang === "en") return str;
+  const map: Record<string, string> = {
+    "Research & Validation": "अनुसंधान और सत्यापन",
+    "Business Registration & Setup": "व्यवसाय पंजीकरण और सेटअप",
+    "Infrastructure & Operations": "बुनियादी ढांचा और संचालन",
+    "Launch & Marketing": "लॉन्च और मार्केटिंग",
+    "Growth & Scaling": "विकास और स्केलिंग",
+    "Month 1-2": "महीना 1-2",
+    "Month 2-3": "महीना 2-3",
+    "Month 3-5": "महीना 3-5",
+    "Month 5-6": "महीना 5-6",
+    "Month 6-12": "महीना 6-12",
+    "Market interviews": "बाजार साक्षात्कार",
+    "Competitor mapping": "प्रतियोगी मानचित्रण",
+    "Test landing page": "परीक्षण लैंडिंग पृष्ठ",
+    "Pricing validation": "मूल्य निर्धारण सत्यापन",
+    "Company registration": "कंपनी पंजीकरण",
+    "GST + licenses": "जीएसटी + लाइसेंस",
+    "Bank account": "बैंक खाता",
+    "Initial team hiring": "प्रारंभिक टीम भर्ती",
+    "Lease premises": "परिसर पट्टा",
+    "Equipment & fit-out": "उपकरण और फिट-आउट",
+    "Vendor contracts": "विक्रेता अनुबंध",
+    "Inventory setup": "इन्वेंटरी सेटअप",
+    "Soft launch event": "सॉफ्ट लॉन्च इवेंट",
+    "Performance marketing": "प्रदर्शन विपणन",
+    "PR & partnerships": "पीआर और साझेदारी",
+    "Loyalty program": "वफादारी कार्यक्रम",
+    "Channel expansion": "चैनल विस्तार",
+    "Hire ops manager": "ऑप्स मैनेजर की भर्ती",
+    "Second location": "दूसरा स्थान",
+    "Brand systemization": "ब्रांड व्यवस्थितकरण",
+  };
+  return map[str] || str;
+};
+
 export default function Roadmap() {
   const { selected } = useSearch();
+  const { lang } = useLanguage();
+  const { t } = useTranslation(lang);
+
   if (!selected) return <Navigate to="/dashboard" replace />;
 
   return (
@@ -58,12 +100,14 @@ export default function Roadmap() {
         className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12"
       >
         <div className="text-center max-w-2xl mx-auto">
-          <span className="eyebrow text-accent-emerald">◈ STRATEGIC ROADMAP ◈</span>
+          <span className="eyebrow text-accent-emerald">
+            {lang === "hi" ? "◈ रणनीतिक रोडमैप ◈" : "◈ STRATEGIC ROADMAP ◈"}
+          </span>
           <h1 className="mt-4 font-display font-extrabold text-3xl sm:text-4xl text-text-primary">
-            Strategic Roadmap
+            {t("strategicRoadmapTitle")}
           </h1>
           <p className="mt-2 font-body text-base text-text-secondary">
-            12-month phased launch plan for {selected.name}
+            {t("phasedLaunchPlan")} {selected.name}
           </p>
         </div>
 
@@ -91,24 +135,28 @@ export default function Roadmap() {
                     <div className="glass-card p-6">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <span className="font-mono text-xs text-accent-emerald">PHASE {p.n}</span>
-                          <SsBadge tone="emerald">{p.when}</SsBadge>
+                          <span className="font-mono text-xs text-accent-emerald">
+                            {t("phase")} {p.n}
+                          </span>
+                          <SsBadge tone="emerald">{translateRoadmapString(p.when, lang)}</SsBadge>
                         </div>
                       </div>
                       <h3 className="mt-2 font-display font-bold text-lg text-text-primary">
-                        {p.title}
+                        {translateRoadmapString(p.title, lang)}
                       </h3>
                       <ul className="mt-4 space-y-2">
                         {p.items.map((it) => (
                           <li key={it} className="flex items-start gap-2">
                             <Check className="w-4 h-4 text-accent-emerald mt-0.5 flex-shrink-0" strokeWidth={3} />
-                            <span className="font-body text-sm text-text-secondary">{it}</span>
+                            <span className="font-body text-sm text-text-secondary">
+                              {translateRoadmapString(it, lang)}
+                            </span>
                           </li>
                         ))}
                       </ul>
                       <div className="mt-4 pt-3 border-t border-border flex items-center justify-between">
                         <span className="font-mono text-[11px] uppercase tracking-widest text-text-muted">
-                          Est. Budget
+                          {t("estBudget")}
                         </span>
                         <span className="font-mono text-base font-bold text-text-primary">
                           {p.budget}

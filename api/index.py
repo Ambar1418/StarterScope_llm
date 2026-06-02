@@ -108,7 +108,7 @@ if os.getenv("VERCEL_URL"):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=r"^(https?://.*\.vercel\.app|https?://.*\.entrext\.com|https?://entrext\.com|https?://localhost(:\d+)?)$",
+    allow_origin_regex=r"^(https?://.*\.vercel\.app|https?://.*\.onrender\.com|https?://.*\.entrext\.com|https?://entrext\.com|https?://localhost(:\d+)?)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -3753,4 +3753,5 @@ if __name__ == "__main__":
         
     print("--- [STARTUP] Engine V4.2 Standardized on UTF-8 (RAG Cluster) ---")
     # Hot-reload disabled for uvicorn consistency in production mode
-    uvicorn.run("index:app", host="0.0.0.0", port=8000, reload=False)
+    port = int(os.getenv("PORT", 8000))
+    uvicorn.run("index:app", host="0.0.0.0", port=port, reload=False)

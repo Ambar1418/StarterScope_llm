@@ -9,6 +9,8 @@ import { SsButton } from "@/components/ss/SsButton";
 import { SsInput } from "@/components/ss/SsInput";
 import { ChevronRight, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { useLanguage } from "@/context/LanguageContext";
+import { useTranslation } from "@/utils/translations";
 
 interface SavedBusinessItem {
   id: number;
@@ -17,6 +19,7 @@ interface SavedBusinessItem {
   category: string;
   location: string;
   details?: {
+    score?: number;
     demand_score?: number;
     category?: string;
     location?: string;
@@ -27,11 +30,13 @@ interface SavedBusinessItem {
 export default function Profile() {
   const { user } = useAuth();
   const { plan, scansUsed, scanLimit } = useSubscription();
+  const { lang } = useLanguage();
+  const { t } = useTranslation(lang);
   const planLabel = plan.charAt(0).toUpperCase() + plan.slice(1);
 
   const [profileName, setProfileName] = useState("");
   const [profileEmail, setProfileEmail] = useState("");
-  const [joinedDate, setJoinedDate] = useState("Joined April 2024");
+  const [joinedDate, setJoinedDate] = useState("");
   const [savedBusinesses, setSavedBusinesses] = useState<SavedBusinessItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -59,10 +64,12 @@ export default function Profile() {
             if (userData.name) setProfileName(userData.name);
             if (userData.created_at) {
               const date = new Date(userData.created_at);
-              const month = date.toLocaleString("default", { month: "long" });
+              const month = date.toLocaleString(lang === "hi" ? "hi-IN" : "en-US", { month: "long" });
               const year = date.getFullYear();
-              setJoinedDate(`Joined ${month} ${year}`);
+              setJoinedDate(`${t("joined")} ${month} ${year}`);
             }
+          } else {
+            setJoinedDate(`${t("joined")} April 2024`);
           }
 
           // 2. Fetch saved businesses
@@ -80,7 +87,7 @@ export default function Profile() {
 
       fetchProfileAndSaved();
     }
-  }, [user]);
+  }, [user, lang, t]);
 
   const handleSave = async () => {
     if (!profileEmail) return;
@@ -93,9 +100,9 @@ export default function Profile() {
           name: profileName
         })
       });
-      if (!res.ok) throw new Error("Failed to update profile");
+      if (!res.ok) throw new Error(lang === "hi" ? "प्रोफ़ाइल अपडेट करने में विफल" : "Failed to update profile");
       
-      toast.success("Profile saved successfully");
+      toast.success(lang === "hi" ? "प्रोफ़ाइल सफलतापूर्वक सहेजी गई" : "Profile saved successfully");
       
       // Update session storage so that other pages (like Navbar) show the new name
       const localUserRaw = sessionStorage.getItem("ss.auth.user");
@@ -104,8 +111,9 @@ export default function Profile() {
         localUser.name = profileName;
         sessionStorage.setItem("ss.auth.user", JSON.stringify(localUser));
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to save profile");
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      toast.error(errorMsg || (lang === "hi" ? "प्रोफ़ाइल सहेजने में विफल" : "Failed to save profile"));
     } finally {
       setIsSaving(false);
     }
@@ -118,12 +126,13 @@ export default function Profile() {
         `${API_BASE_URL}/api/saved-businesses/${savedId}?user_email=${encodeURIComponent(user.email)}`,
         { method: "DELETE" }
       );
-      if (!res.ok) throw new Error("Failed to remove business");
+      if (!res.ok) throw new Error(lang === "hi" ? "व्यवसाय हटाने में विफल" : "Failed to remove business");
       
       setSavedBusinesses((prev) => prev.filter((b) => b.id !== savedId));
-      toast.success("Removed from vault");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to delete saved business");
+      toast.success(t("removedFromVault"));
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      toast.error(errorMsg || (lang === "hi" ? "सहेजे गए व्यवसाय को हटाने में विफल" : "Failed to delete saved business"));
     }
   };
 
@@ -133,11 +142,11 @@ export default function Profile() {
       <div className="bg-surface border-b border-border">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center gap-2 font-mono text-xs text-text-muted">
-            <span>Dashboard</span>
+            <span>{t("dashboard")}</span>
             <ChevronRight className="w-3 h-3" />
-            <span className="text-text-primary">Profile</span>
+            <span className="text-text-primary">{t("profile")}</span>
           </div>
-          <h1 className="mt-2 font-display font-extrabold text-3xl text-text-primary">Your Profile</h1>
+          <h1 className="mt-2 font-display font-extrabold text-3xl text-text-primary">{t("yourProfile")}</h1>
         </div>
       </div>
 
@@ -154,11 +163,11 @@ export default function Profile() {
               {getInitials(profileName || user?.name || user?.email)}
             </div>
             <span className="mt-3 text-[11px] font-mono px-2 py-0.5 rounded-md bg-accent-emerald-light text-accent-emerald border border-accent-emerald/20">
-              Active
+              {t("active")}
             </span>
           </div>
           <div>
-            <h2 className="font-display font-bold text-2xl text-text-primary">{profileName || user?.name || "Guest User"}</h2>
+            <h2 className="font-display font-bold text-2xl text-text-primary">{profileName || user?.name || t("guestUser")}</h2>
             <p className="mt-1 font-mono text-[13px] text-text-muted">{profileEmail || user?.email}</p>
             <p className="mt-2 font-body text-sm text-text-secondary">{joinedDate}</p>
           </div>
@@ -168,19 +177,19 @@ export default function Profile() {
         <div className="glass-card p-6">
           <div className="flex items-center gap-3 mb-4">
             <span className="w-1 h-5 bg-accent-emerald rounded-full" />
-            <h3 className="font-display font-semibold text-base text-text-primary">Subscription</h3>
+            <h3 className="font-display font-semibold text-base text-text-primary">{t("subscription")}</h3>
           </div>
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <span className="font-mono text-xs uppercase tracking-widest px-3 py-1.5 rounded-full bg-accent-emerald-light text-accent-emerald border border-accent-emerald/30">
-                {planLabel} Plan
+                {lang === "hi" ? (plan === "free" ? "मुफ़्त" : plan === "starter" ? "स्टार्टर" : plan === "professional" ? "प्रोफेशनल" : planLabel) : planLabel} {t("planLabel")}
               </span>
               <p className="mt-3 font-body text-sm text-text-secondary">
-                {scansUsed} of {scanLimit === Infinity ? "∞" : scanLimit} scans used this month
+                {scansUsed} {lang === "hi" ? `कुल ${scanLimit === Infinity ? "∞" : scanLimit} स्कैन में से उपयोग किए गए` : `of ${scanLimit === Infinity ? "∞" : scanLimit} ${t("scansUsedText")}`}
               </p>
             </div>
-            <SsButton variant="outline" size="sm" onClick={() => toast.info("Upgrade flow coming soon")}>
-              Upgrade
+            <SsButton variant="outline" size="sm" onClick={() => toast.info(lang === "hi" ? "अपग्रेड प्रवाह जल्द आ रहा है" : "Upgrade flow coming soon")}>
+              {t("upgrade")}
             </SsButton>
           </div>
         </div>
@@ -189,10 +198,10 @@ export default function Profile() {
         <div className="glass-card p-6 space-y-4">
           <div className="flex items-center gap-3 mb-2">
             <span className="w-1 h-5 bg-accent-emerald rounded-full" />
-            <h3 className="font-display font-semibold text-base text-text-primary">Edit Profile</h3>
+            <h3 className="font-display font-semibold text-base text-text-primary">{t("editProfile")}</h3>
           </div>
           <div>
-            <label className="font-mono text-[11px] uppercase tracking-widest text-text-muted">Display Name</label>
+            <label className="font-mono text-[11px] uppercase tracking-widest text-text-muted">{t("displayName")}</label>
             <SsInput 
               value={profileName} 
               onChange={(e) => setProfileName(e.target.value)} 
@@ -200,7 +209,7 @@ export default function Profile() {
             />
           </div>
           <div>
-            <label className="font-mono text-[11px] uppercase tracking-widest text-text-muted">Email (Read Only)</label>
+            <label className="font-mono text-[11px] uppercase tracking-widest text-text-muted">{t("emailReadOnly")}</label>
             <SsInput 
               value={profileEmail} 
               disabled 
@@ -213,10 +222,10 @@ export default function Profile() {
               {isSaving ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin inline-block" />
-                  Saving...
+                  {t("saving")}
                 </>
               ) : (
-                "Save Changes"
+                t("saveChanges")
               )}
             </SsButton>
           </div>
@@ -226,18 +235,18 @@ export default function Profile() {
         <div className="glass-card p-6">
           <div className="flex items-center gap-3 mb-4">
             <span className="w-1 h-5 bg-accent-emerald rounded-full" />
-            <h3 className="font-display font-semibold text-base text-text-primary">Saved Businesses (Alpha Vault)</h3>
+            <h3 className="font-display font-semibold text-base text-text-primary">{t("savedBusinessesVault")}</h3>
           </div>
           {isLoading ? (
             <div className="flex justify-center items-center py-6 text-text-muted">
               <Loader2 className="w-6 h-6 animate-spin mr-2" />
-              <span>Loading saved vault...</span>
+              <span>{t("loadingVault")}</span>
             </div>
           ) : savedBusinesses.length === 0 ? (
             <p className="text-sm text-text-muted text-center py-6">
               {plan === "free" 
-                ? "Upgrade to Professional plan to save analysis results to your Alpha Vault." 
-                : "No saved business plans in your vault yet."}
+                ? t("vaultEmptyFree")
+                : t("vaultEmpty")}
             </p>
           ) : (
             <ul className="divide-y divide-border">
@@ -247,9 +256,9 @@ export default function Profile() {
                     <span className="font-body text-sm text-text-primary">
                       {b.business_name} {b.location ? `/ ${b.location}` : ""}
                     </span>
-                    {b.details?.demand_score !== undefined && (
+                    {(b.details?.score !== undefined || b.details?.demand_score !== undefined) && (
                       <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-accent-emerald-light text-accent-emerald">
-                        {b.details.demand_score}
+                        {b.details.score ?? b.details.demand_score}
                       </span>
                     )}
                   </div>

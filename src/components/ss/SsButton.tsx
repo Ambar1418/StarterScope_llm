@@ -1,8 +1,8 @@
 import { forwardRef, ButtonHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 
-type Variant = "primary" | "secondary" | "ghost" | "blue" | "outline" | "danger";
-type Size = "sm" | "md" | "lg";
+type Variant = "primary" | "secondary" | "ghost" | "blue" | "outline" | "danger" | "emerald";
+type Size = "xs" | "sm" | "md" | "lg";
 
 export interface SsButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
@@ -19,9 +19,12 @@ const variantClasses: Record<Variant, string> = {
   outline:
     "border border-accent-emerald text-accent-emerald hover:bg-accent-emerald-light",
   danger: "bg-vivid-rose text-white hover:opacity-90",
+  emerald:
+    "bg-accent-emerald-light text-accent-emerald-dark border border-accent-emerald/30 hover:bg-accent-emerald hover:text-white hover:-translate-y-[1px] transition-all",
 };
 
 const sizeClasses: Record<Size, string> = {
+  xs: "h-7 px-3 text-[11px] rounded-lg",
   sm: "h-9 px-4 text-[13px] rounded-lg",
   md: "h-11 px-6 text-sm rounded-xl",
   lg: "h-14 px-8 text-base rounded-xl",

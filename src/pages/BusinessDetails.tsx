@@ -14,6 +14,8 @@ import { useSearch } from "@/context/SearchContext";
 import { SsButton } from "@/components/ss/SsButton";
 import { SsBadge } from "@/components/ss/SsBadge";
 import { toast } from "sonner";
+import { useLanguage } from "@/context/LanguageContext";
+import { useTranslation } from "@/utils/translations";
 
 const competitors = [
   { name: "Spice Junction", distance: "0.4 km", type: "Cloud Kitchen", status: "Active" },
@@ -23,14 +25,17 @@ const competitors = [
 
 export default function BusinessDetails() {
   const { selected } = useSearch();
+  const { lang } = useLanguage();
+  const { t } = useTranslation(lang);
+
   if (!selected) return <Navigate to="/dashboard" replace />;
 
   const radarData = [
-    { dim: "Market Size", value: 90 },
-    { dim: "Competition", value: 60 },
-    { dim: "Growth Rate", value: 85 },
-    { dim: "Ease of Entry", value: 75 },
-    { dim: "Profitability", value: 88 },
+    { dim: t("marketSize"), value: 90 },
+    { dim: t("competition"), value: 60 },
+    { dim: t("growthRate"), value: 85 },
+    { dim: t("easeOfEntry"), value: 75 },
+    { dim: t("profitability"), value: 88 },
   ];
 
   return (
@@ -46,7 +51,7 @@ export default function BusinessDetails() {
           to="/dashboard"
           className="inline-flex items-center gap-2 font-body text-sm text-text-secondary hover:text-text-primary transition-colors"
         >
-          <ArrowLeft className="w-4 h-4" /> Back to Results
+          <ArrowLeft className="w-4 h-4" /> {t("backToResults")}
         </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
@@ -81,17 +86,16 @@ export default function BusinessDetails() {
                   ))}
                 </div>
                 <p className="mt-6 font-body text-base text-text-secondary leading-[1.8]">
-                  {selected.description} This recommendation is anchored to verified
-                  micro-market signals and peer-validated demand patterns. Our 5-layer
-                  engine cross-references search trends, OSM business density, and
-                  consumer behavior to produce decision-grade output.
+                  {selected.description} {lang === "hi" 
+                    ? "यह सिफारिश सत्यापित सूक्ष्म-बाजार संकेतों और सहकर्मी-सत्यापित मांग पैटर्न पर आधारित है। हमारा 5-स्तरीय इंजन निर्णय-ग्रेड आउटपुट देने के लिए खोज प्रवृत्तियों, ओएसएम व्यावसायिक घनत्व और उपभोक्ता व्यवहार को क्रॉस-रेफरेंस करता है।"
+                    : "This recommendation is anchored to verified micro-market signals and peer-validated demand patterns. Our 5-layer engine cross-references search trends, OSM business density, and consumer behavior to produce decision-grade output."}
                 </p>
               </div>
             </div>
 
             <div className="glass-card p-6">
               <h2 className="font-display font-bold text-lg text-text-primary">
-                Market Analysis
+                {t("marketAnalysis")}
               </h2>
               <div className="h-72 mt-4">
                 <ResponsiveContainer width="100%" height="100%">
@@ -114,16 +118,16 @@ export default function BusinessDetails() {
 
             <div className="glass-card p-6">
               <h2 className="font-display font-bold text-lg text-text-primary">
-                Competitive Landscape
+                {t("competitiveLandscape")}
               </h2>
               <div className="mt-4 overflow-x-auto">
                 <table className="w-full text-left">
                   <thead className="font-mono text-[11px] text-text-muted uppercase tracking-widest">
                     <tr>
-                      <th className="py-2 pr-4">Name</th>
-                      <th className="py-2 pr-4">Distance</th>
-                      <th className="py-2 pr-4">Type</th>
-                      <th className="py-2">Status</th>
+                      <th className="py-2 pr-4">{t("compName")}</th>
+                      <th className="py-2 pr-4">{t("compDistance")}</th>
+                      <th className="py-2 pr-4">{t("compType")}</th>
+                      <th className="py-2">{t("compStatus")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -134,7 +138,7 @@ export default function BusinessDetails() {
                         <td className="py-3 pr-4 font-body text-sm text-text-secondary">{c.type}</td>
                         <td className="py-3">
                           <SsBadge tone={c.status === "Active" ? "emerald" : "rose"}>
-                            {c.status}
+                            {c.status === "Active" ? t("compActive") : t("compClosed")}
                           </SsBadge>
                         </td>
                       </tr>
@@ -143,20 +147,53 @@ export default function BusinessDetails() {
                 </table>
               </div>
             </div>
+
+            {selected.keySuccessFactors && selected.keySuccessFactors.length > 0 && (
+              <div className="glass-card p-6">
+                <h2 className="font-display font-bold text-lg text-text-primary">
+                  {t("keySuccessFactors")}
+                </h2>
+                <ul className="mt-4 list-disc pl-5 space-y-2 text-sm text-text-secondary">
+                  {selected.keySuccessFactors.map((f, i) => (
+                    <li key={i}>{f}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {selected.sixMonthPlan && selected.sixMonthPlan.length > 0 && (
+              <div className="glass-card p-6">
+                <h2 className="font-display font-bold text-lg text-text-primary">
+                  {t("sixMonthPlan")}
+                </h2>
+                <div className="mt-4 space-y-3">
+                  {selected.sixMonthPlan.map((s, i) => (
+                    <div key={i} className="flex gap-4 items-start pb-3 border-b border-border/40 last:border-0 last:pb-0">
+                      <span className="font-mono text-xs font-bold text-accent-emerald bg-accent-emerald-light px-2.5 py-1 rounded-lg">
+                        {s.month}
+                      </span>
+                      <span className="text-sm text-text-secondary leading-relaxed">
+                        {s.goal}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right */}
           <div className="space-y-4">
             <div className="glass-card p-6">
               <h3 className="font-display font-bold text-base text-text-primary">
-                Financial Summary
+                {t("financialSummary")}
               </h3>
               <ul className="mt-4 space-y-4">
                 {[
-                  { label: "Investment Required", v: selected.investment },
-                  { label: "Monthly Revenue", v: "₹2.5L – 4L" },
-                  { label: "ROI Timeframe", v: selected.roi },
-                  { label: "Break-even", v: "Month 8" },
+                  { label: t("investmentRequired"), v: selected.investment },
+                  { label: t("potentialRevenue"), v: selected.potentialRevenue || "₹2.5L – 4L" },
+                  { label: t("roiTimeframe"), v: selected.roi },
+                  { label: t("paybackPeriod"), v: selected.paybackPeriod || "12 Months" },
                 ].map((m) => (
                   <li key={m.label}>
                     <div className="font-mono text-[11px] uppercase tracking-widest text-text-muted">
@@ -172,13 +209,13 @@ export default function BusinessDetails() {
 
             <div className="glass-card p-6">
               <h3 className="font-display font-bold text-base text-text-primary">
-                Risk Assessment
+                {t("riskAssessment")}
               </h3>
               <ul className="mt-4 space-y-3">
                 {[
-                  { tone: "emerald" as const, label: "Market Demand", risk: "Low", desc: "Sustained, growing." },
-                  { tone: "amber" as const, label: "Operational Cost", risk: "Medium", desc: "Manageable with scale." },
-                  { tone: "emerald" as const, label: "Regulatory", risk: "Low", desc: "Standard compliance only." },
+                  { tone: "emerald" as const, label: t("marketDemand"), risk: t("low"), desc: lang === "hi" ? "निरंतर, बढ़ती हुई।" : "Sustained, growing." },
+                  { tone: "amber" as const, label: t("operationalCost"), risk: t("medium"), desc: lang === "hi" ? "पैमाने के साथ प्रबंधनीय।" : "Manageable with scale." },
+                  { tone: "emerald" as const, label: t("regulatory"), risk: t("low"), desc: lang === "hi" ? "केवल मानक अनुपालन।" : "Standard compliance only." },
                 ].map((r) => (
                   <li key={r.label}>
                     <div className="flex items-center justify-between">
@@ -193,22 +230,22 @@ export default function BusinessDetails() {
 
             <div className="glass-card p-6 bg-accent-emerald-light border-accent-emerald/20">
               <h3 className="font-display font-bold text-base text-text-primary">
-                Ready to start?
+                {t("readyToStart")}
               </h3>
               <p className="mt-1 font-body text-sm text-text-secondary">
-                Generate a complete business plan or download the strategic report.
+                {t("readyToStartDesc")}
               </p>
               <Link to="/business-plan" className="block mt-4">
                 <SsButton variant="primary" className="w-full">
-                  <FileText className="w-4 h-4" /> Generate Business Plan
+                  <FileText className="w-4 h-4" /> {t("generatePlan")}
                 </SsButton>
               </Link>
               <SsButton
                 variant="ghost"
                 className="w-full mt-2"
-                onClick={() => toast.info("PDF export coming soon")}
+                onClick={() => toast.info(lang === "hi" ? "पीडीएफ निर्यात जल्द ही आ रहा है" : "PDF export coming soon")}
               >
-                <Download className="w-4 h-4" /> Download PDF
+                <Download className="w-4 h-4" /> {t("downloadPdf")}
               </SsButton>
             </div>
           </div>
